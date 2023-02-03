@@ -27,7 +27,12 @@
         </a-form-item>
 
         <a-form-item style="text-align: center">
-          <a-button style="width: 200px" type="primary" html-type="submit">
+          <a-button
+            :loading="loading"
+            style="width: 200px"
+            type="primary"
+            html-type="submit"
+          >
             Login
           </a-button>
         </a-form-item>
@@ -37,14 +42,14 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { apiService } from "@/api";
 import { setToken } from "@/utils/cookie";
 import { message } from "ant-design-vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-
+const loading = ref(false);
 const formState = reactive({
   username: "",
   password: "",
@@ -52,9 +57,11 @@ const formState = reactive({
 
 const onFinish = async (values) => {
   console.log("Success:", values);
+  loading.value = true;
   const { data } = await apiService.login(values);
   setToken(data);
   message.success("登录成功！");
+  loading.value = false;
   setTimeout(() => {
     router.push({
       name: "home",
