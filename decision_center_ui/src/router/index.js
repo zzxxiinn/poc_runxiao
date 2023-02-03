@@ -1,23 +1,44 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHashHistory } from "vue-router";
+import LoginPage from "@/views/LoginPage.vue";
+import { getToken } from "@/utils/cookie";
+import Layout from "@/components/CommonLayout.vue";
+import UploadPage from "@/views/UploadPage.vue";
+import BoardPage from "@/views/BoardPage.vue";
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: HomeView
+      name: "home",
+      path: "/",
+      component: Layout,
+      redirect: "/upload",
+      children: [
+        {
+          name: "upload",
+          path: "/upload",
+          component: UploadPage,
+          meta: { title: "上传数据" },
+        },
+        {
+          name: "board",
+          path: "/board",
+          component: BoardPage,
+          meta: { title: "数据看板" },
+        },
+      ],
     },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue')
-    }
-  ]
-})
+    { name: "login", path: "/login", component: LoginPage },
+  ],
+});
 
-export default router
+router.beforeEach((to, from, next) => {
+  const token = getToken();
+  if (!token && to.name !== "login") {
+    return { name: "login" };
+  } else {
+    next();
+  }
+});
+
+export default router;

@@ -8,9 +8,9 @@ class HomeController extends Controller {
     const { ctx } = this;
     const { body: loginInfo = {} } = ctx.request;
 
-    const { user, password } = loginInfo;
+    const { username, password } = loginInfo;
 
-    if (user === 'admin' && password === '123456') {
+    if (username === 'admin' && password === '123456') {
       ctx.status = 200;
       ctx.body = fake_token;
     } else {

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "egg": "^3",
+    "egg-cors": "^2.2.3",
     "egg-scripts": "^2",
     "egg-sequelize": "^6.0.0",
     "lodash": "^4.17.21",
