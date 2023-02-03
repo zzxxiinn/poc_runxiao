@@ -7,9 +7,8 @@ class FileController extends Controller {
     const { ctx } = this;
 
     const file = ctx.request.files[0];
-
     const result = await ctx.service.file.analyzeExcel(file);
-    console.log(result);
+
     ctx.status = 200;
     ctx.body = result;
   }

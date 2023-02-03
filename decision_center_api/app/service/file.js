@@ -111,7 +111,6 @@ class FileService extends Service {
 
     // build costs
     const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
-
     const aggregateCosts = headerInfo.cost_info_list.filter(i => aggregateCostIDs.includes(i.ID));
     const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
 
@@ -149,8 +148,6 @@ class FileService extends Service {
         parentCost.Amount = evaluate(`${parentCost.Amount} + ${costAmount}`);
       }
     }
-
-    console.log(customer, product, order);
 
     const costCreateResult = await ctx.model.Cost.bulkCreate(costModels, { returning: true });
     console.log(costCreateResult);
