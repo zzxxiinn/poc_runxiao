@@ -13,6 +13,7 @@
           :key="nav.name"
           @click="() => handleClick(nav)"
         >
+          <component :is="nav.meta.icon" />
           <span class="nav-text">{{ nav.meta.title }}</span>
         </a-menu-item>
       </a-menu>
@@ -39,7 +40,6 @@
         <a-dropdown>
           <a-button shape="circle" class="ant-dropdown-link" @click.prevent>
             A
-            <DownOutlined />
           </a-button>
           <template #overlay>
             <a-menu>

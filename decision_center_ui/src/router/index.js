@@ -4,6 +4,7 @@ import { getToken } from "@/utils/cookie";
 import Layout from "@/components/CommonLayout.vue";
 import UploadPage from "@/views/UploadPage.vue";
 import BoardPage from "@/views/BoardPage.vue";
+import { CloudUploadOutlined, DashboardOutlined } from "@ant-design/icons-vue";
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -18,13 +19,13 @@ const router = createRouter({
           name: "upload",
           path: "/upload",
           component: UploadPage,
-          meta: { title: "上传数据" },
+          meta: { title: "上传数据", icon: CloudUploadOutlined },
         },
         {
           name: "board",
           path: "/board",
           component: BoardPage,
-          meta: { title: "数据看板" },
+          meta: { title: "数据看板", icon: DashboardOutlined },
         },
       ],
     },
