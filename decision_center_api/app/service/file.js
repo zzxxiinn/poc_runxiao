@@ -99,7 +99,8 @@ class FileService extends Service {
     // build order
     const orderID = record[headerInfo.order_info_map.ExtOrderID.column];
     let order = await ctx.model.Order.findOne({ where: { ExtOrderID: orderID } });
-    if (!order) {
+    const orderExist = !!order;
+    if (!orderExist) {
       const query = {};
       for (const filed of Object.keys(headerInfo.order_info_map)) {
         query[filed] = record[headerInfo.order_info_map[filed].column];
@@ -111,17 +112,9 @@ class FileService extends Service {
 
     // build costs
     const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
-    const aggregateCosts = headerInfo.cost_info_list.filter(i => aggregateCostIDs.includes(i.ID));
     const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
 
     const costModels = [];
-    aggregateCosts.forEach(c => {
-      costModels.push({
-        OrderID: order.ID,
-        CostTypeID: c.ID,
-        Amount: 0,
-      });
-    });
 
     for (const cost of basicCosts) {
       /**
@@ -136,16 +129,20 @@ class FileService extends Service {
        *     "column": idx
        *   }
        */
-      const costAmount = cost.CalculationType === 0 ? record[cost.column] : order.Amount * cost.AmortizationRatio;
-      costModels.push({
-        OrderID: order.ID,
-        CostTypeID: cost.ID,
-        Amount: costAmount,
-      });
-
-      if (cost.ParentTypeID) {
-        const parentCost = costModels.find(c => c.CostTypeID === cost.ParentTypeID);
-        parentCost.Amount = evaluate(`${parentCost.Amount} + ${costAmount}`);
+      if (cost.CalculationType === 0) {
+        const costAmount = record[cost.column];
+        costModels.push({
+          OrderID: order.ID,
+          CostTypeID: cost.ID,
+          Amount: costAmount,
+        });
+      } else if (!orderExist) {
+        const costAmount = order.Amount * cost.AmortizationRatio;
+        costModels.push({
+          OrderID: order.ID,
+          CostTypeID: cost.ID,
+          Amount: costAmount,
+        });
       }
     }
 
