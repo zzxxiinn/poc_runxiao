@@ -16,13 +16,12 @@
  * );
  */
 
-const { NUMERIC } = require('sequelize');
 /**
  * @typedef {import('egg')} Egg
  * @param {Egg.Application} app egg application
  */
 module.exports = app => {
-  const { INTEGER, STRING, DATE } = app.Sequelize;
+  const { INTEGER, STRING, DATE, NUMERIC } = app.Sequelize;
   const Order = app.model.define('Order', {
     ID: { type: INTEGER, primaryKey: true, autoIncrement: true },
     ExtOrderID: { type: STRING(100), allowNull: false },
@@ -32,7 +31,6 @@ module.exports = app => {
     Unit: { type: STRING(10), allowNull: false, defaultValue: '' },
     Quantity: { type: INTEGER, allowNull: false },
     DeliveryDate: { type: DATE, allowNull: false },
-    EntryDate: { type: DATE, allowNull: false },
     CreatedAt: DATE,
   });
 

@@ -2,7 +2,6 @@
 
 const { Service } = require('egg');
 const xlsx = require('node-xlsx');
-const { evaluate } = require('mathjs');
 
 class FileService extends Service {
   async analyzeExcel({ filepath }) {
@@ -36,13 +35,17 @@ class FileService extends Service {
 
   async calcSheetHeads(headers) {
     const { ctx } = this;
+    const handleDate = d => new Date(1900, 0, d - 1);
     const order_info_map = {
       ExtOrderID: { name: '订单编号', column: null },
       Amount: { name: '订单金额', column: null },
       Unit: { name: '核算单元', column: null },
       Quantity: { name: '交付数量', column: null },
-      DeliveryDate: { name: '交付时间', column: null },
-      EntryDate: { name: '入库时间', column: null },
+      DeliveryDate: { name: '交付时间', column: null, f: handleDate },
+    };
+    const inventory_info_map = {
+      EntryDate: { name: '入库时间', column: null, f: handleDate },
+      EntryQuantity: { name: '入库数量', column: null },
     };
     const customer_info_map = {
       Name: { name: '客户名称', column: null },
@@ -51,7 +54,12 @@ class FileService extends Service {
       Name: { name: '产品名称', column: null },
     };
 
-    [ order_info_map, customer_info_map, product_info_map ].forEach(info_map => {
+    [
+      order_info_map,
+      inventory_info_map,
+      customer_info_map,
+      product_info_map,
+    ].forEach(info_map => {
       for (const o_key of Object.keys(info_map)) {
         const info_item = info_map[o_key];
         info_item.column = headers[0].indexOf(info_item.name);
@@ -59,7 +67,6 @@ class FileService extends Service {
     });
 
     const definedOrderTypes = await ctx.model.CostType.findAll();
-
     const cost_info_list = definedOrderTypes.map(typeRecord => {
       const type = typeRecord.toJSON();
       type.name = type.Description;
@@ -77,6 +84,7 @@ class FileService extends Service {
 
     return {
       order_info_map,
+      inventory_info_map,
       customer_info_map,
       product_info_map,
       cost_info_list,
@@ -85,6 +93,21 @@ class FileService extends Service {
 
   async handleRecord(headerInfo, record) {
     const { ctx } = this;
+
+    const handleQueryMapCalc = (record, info_map) => {
+      const query = {};
+      for (const filed of Object.keys(info_map)) {
+        const f = info_map[filed].f;
+        const v = record[info_map[filed].column];
+        if (f) {
+          query[filed] = f(v);
+        } else {
+          query[filed] = v;
+        }
+      }
+
+      return query;
+    };
 
     // build customer
     const customerName = record[headerInfo.customer_info_map.Name.column];
@@ -101,15 +124,19 @@ class FileService extends Service {
     let order = await ctx.model.Order.findOne({ where: { ExtOrderID: orderID } });
     const orderExist = !!order;
     if (!orderExist) {
-      const query = {};
-      for (const filed of Object.keys(headerInfo.order_info_map)) {
-        query[filed] = record[headerInfo.order_info_map[filed].column];
-      }
+      const query = handleQueryMapCalc(record, headerInfo.order_info_map);
       query.CustomerID = customer.ID;
       query.ProductID = product.ID;
       order = await ctx.model.Order.create(query);
     }
 
+    // build inventory
+    const query = handleQueryMapCalc(record, headerInfo.inventory_info_map);
+    query.OrderID = order.ID;
+    const inventory = await ctx.model.Inventory.create(query);
+
+
+    console.log(inventory);
     // build costs
     const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
     const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
