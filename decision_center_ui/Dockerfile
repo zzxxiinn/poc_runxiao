@@ -9,6 +9,6 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-EXPOSE 6207
+EXPOSE 5173
 
 ENTRYPOINT ["bash", "./build_serve.sh"]

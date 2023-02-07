@@ -22,5 +22,5 @@ npm run build
 
 echo 'build succeed'
 
-serve -s dist -l 6207
+serve -s dist -l 5173
 

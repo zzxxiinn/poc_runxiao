@@ -29,7 +29,7 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "start": "egg-scripts start --daemon --title=egg-server-decision_center_api",
+    "start": "egg-scripts start --workers=2 --title=egg-server-decision_center_api",
     "stop": "egg-scripts stop --title=egg-server-decision_center_api",
     "dev": "egg-bin dev",
     "debug": "egg-bin debug",
