@@ -1,6 +1,5 @@
 import { createAuthInstance } from "./general";
 
-console.log(import.meta.env);
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 const i = () => createAuthInstance(baseUrl);
 

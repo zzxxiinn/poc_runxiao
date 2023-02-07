@@ -135,8 +135,6 @@ class FileService extends Service {
     query.OrderID = order.ID;
     const inventory = await ctx.model.Inventory.create(query);
 
-
-    console.log(inventory);
     // build costs
     const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
     const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
@@ -174,7 +172,6 @@ class FileService extends Service {
     }
 
     const costCreateResult = await ctx.model.Cost.bulkCreate(costModels, { returning: true });
-    console.log(costCreateResult);
   }
 }
 
