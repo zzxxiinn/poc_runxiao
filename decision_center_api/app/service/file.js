@@ -19,8 +19,10 @@ class FileService extends Service {
       };
       for (const [ idx, record ] of sheetData.slice(2).entries()) {
         try {
-          await this.handleRecord(sheetHeadInfo, record);
-          result.success.push(idx);
+          if (record[0]) {
+            await this.handleRecord(sheetHeadInfo, record);
+            result.success.push(idx);
+          }
         } catch (e) {
           result.failed.push(idx);
         }
@@ -35,7 +37,8 @@ class FileService extends Service {
 
   async calcSheetHeads(headers) {
     const { ctx } = this;
-    const handleDate = d => new Date(1900, 0, d - 1);
+    // const handleDate = d => new Date(1900, 0, d - 1);
+    const handleDate = d => new Date(String(d));
     const order_info_map = {
       ExtOrderID: { name: '订单编号', column: null },
       Amount: { name: '订单金额', column: null },
