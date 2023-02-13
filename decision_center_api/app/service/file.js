@@ -174,7 +174,8 @@ class FileService extends Service {
         if (cost.CalculationType === 0) {
           const costAmount = record[cost.column];
           if (costAmount === undefined || costAmount === '' || costAmount === null) {
-            ctx.throw('empty column');
+            continue;
+            // ctx.throw('empty column');
           }
           if (Number(costAmount) !== 0) {
             costModels.push({
