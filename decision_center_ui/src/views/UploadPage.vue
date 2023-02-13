@@ -19,16 +19,28 @@
   </a-upload-dragger>
 
   <section v-if="uploadResult" style="margin-top: 30px">
-    <a-alert
-      :message="`上传成功！${uploadResult.success.length} 条上传成功，
-      ${uploadResult.failed.length} 条上传失败`"
-      type="success"
-    />
+    <a-alert :type="uploadResult.failed.length ? 'warning' : 'success'">
+      <template #message>
+        上传完成！
+        {{ uploadResult.success.length }} 条上传成功，
+        {{ uploadResult.failed.length }}
+        条上传失败
+        <template v-if="uploadResult.failed.length">
+          <a-tooltip
+            :title="`第 ${uploadResult.failed
+              .map((i) => i + 3)
+              .join(',')} 行记录失败`"
+          >
+            <info-circle-outlined />
+          </a-tooltip>
+        </template>
+      </template>
+    </a-alert>
     <p></p>
   </section>
 </template>
 <script setup>
-import { InboxOutlined } from "@ant-design/icons-vue";
+import { InboxOutlined, InfoCircleOutlined } from "@ant-design/icons-vue";
 import { ref } from "vue";
 import { apiService } from "@/api";
 import { message } from "ant-design-vue";

@@ -112,69 +112,97 @@ class FileService extends Service {
       return query;
     };
 
-    // build customer
-    const customerName = record[headerInfo.customer_info_map.Name.column];
-    let customer = await ctx.model.Customer.findOne({ where: { Name: customerName } });
-    if (!customer) customer = await ctx.model.Customer.create({ Name: customerName });
-
-    // build product
-    const productName = record[headerInfo.product_info_map.Name.column];
-    let product = await ctx.model.Product.findOne({ where: { Name: productName } });
-    if (!product) product = await ctx.model.Product.create({ Name: productName });
-
-    // build order
-    const orderID = record[headerInfo.order_info_map.ExtOrderID.column];
-    let order = await ctx.model.Order.findOne({ where: { ExtOrderID: orderID } });
-    const orderExist = !!order;
-    if (!orderExist) {
-      const query = handleQueryMapCalc(record, headerInfo.order_info_map);
-      query.CustomerID = customer.ID;
-      query.ProductID = product.ID;
-      order = await ctx.model.Order.create(query);
-    }
-
-    // build inventory
-    const query = handleQueryMapCalc(record, headerInfo.inventory_info_map);
-    query.OrderID = order.ID;
-    const inventory = await ctx.model.Inventory.create(query);
-
-    // build costs
-    const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
-    const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
-
-    const costModels = [];
-
-    for (const cost of basicCosts) {
-      /**
-       * cost --> {
-       *     "ID": 2,
-       *     "ParentTypeID": null,
-       *     "Description": "主材费",
-       *     "CalculationType": 0,
-       *     "AmortizationRatio": null,
-       *     "CreatedAt": "2023-02-01T06:08:14.882Z",
-       *     "Name": "主材费",
-       *     "column": idx
-       *   }
-       */
-      if (cost.CalculationType === 0) {
-        const costAmount = record[cost.column];
-        costModels.push({
-          OrderID: order.ID,
-          CostTypeID: cost.ID,
-          Amount: costAmount,
-        });
-      } else if (!orderExist) {
-        const costAmount = order.Amount * cost.AmortizationRatio;
-        costModels.push({
-          OrderID: order.ID,
-          CostTypeID: cost.ID,
-          Amount: costAmount,
+    const t = await this.ctx.model.transaction();
+    try {
+      // build customer
+      const customerName = record[headerInfo.customer_info_map.Name.column];
+      let customer = await ctx.model.Customer.findOne({ where: { Name: customerName } });
+      if (!customer) {
+        customer = await ctx.model.Customer.create({ Name: customerName }, {
+          transaction: t,
         });
       }
-    }
 
-    const costCreateResult = await ctx.model.Cost.bulkCreate(costModels, { returning: true });
+      // build product
+      const productName = record[headerInfo.product_info_map.Name.column];
+      let product = await ctx.model.Product.findOne({ where: { Name: productName } });
+      if (!product) {
+        product = await ctx.model.Product.create({ Name: productName }, {
+          transaction: t,
+        });
+      }
+
+      // build order
+      const orderID = record[headerInfo.order_info_map.ExtOrderID.column];
+      let order = await ctx.model.Order.findOne({ where: { ExtOrderID: orderID } });
+      const orderExist = !!order;
+      if (!orderExist) {
+        const query = handleQueryMapCalc(record, headerInfo.order_info_map);
+        query.CustomerID = customer.ID;
+        query.ProductID = product.ID;
+        order = await ctx.model.Order.create(query, {
+          transaction: t,
+        });
+      }
+
+      // build inventory
+      const query = handleQueryMapCalc(record, headerInfo.inventory_info_map);
+      query.OrderID = order.ID;
+      await ctx.model.Inventory.create(query, {
+        transaction: t,
+      });
+
+      // build costs
+      const aggregateCostIDs = [ ...new Set(headerInfo.cost_info_list.map(i => i.ParentTypeID)) ];
+      const basicCosts = headerInfo.cost_info_list.filter(i => !aggregateCostIDs.includes(i.ID));
+
+      const costModels = [];
+
+      for (const cost of basicCosts) {
+        /**
+         * cost --> {
+         *     "ID": 2,
+         *     "ParentTypeID": null,
+         *     "Description": "主材费",
+         *     "CalculationType": 0,
+         *     "AmortizationRatio": null,
+         *     "CreatedAt": "2023-02-01T06:08:14.882Z",
+         *     "Name": "主材费",
+         *     "column": idx
+         *   }
+         */
+        if (cost.CalculationType === 0) {
+          const costAmount = record[cost.column];
+          if (costAmount === undefined || costAmount === '' || costAmount === null) {
+            ctx.throw('empty column');
+          }
+          if (Number(costAmount) !== 0) {
+            costModels.push({
+              OrderID: order.ID,
+              CostTypeID: cost.ID,
+              Amount: costAmount,
+            });
+          }
+        } else if (!orderExist) {
+          const costAmount = order.Amount * cost.AmortizationRatio;
+          costModels.push({
+            OrderID: order.ID,
+            CostTypeID: cost.ID,
+            Amount: costAmount,
+          });
+        }
+      }
+
+      await ctx.model.Cost.bulkCreate(costModels, {
+        returning: true,
+        transaction: t,
+      });
+
+      await t.commit();
+    } catch (e) {
+      await t.rollback();
+      throw e;
+    }
   }
 }
 
